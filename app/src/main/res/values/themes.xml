@@ -1,5 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 앱의 기본 배경색을 흰색으로 설정 -->
+        <item name="android:windowBackground">@drawable/gradient_background</item>
+        <item name="android:windowDisablePreview">true</item>
+    </style>
 
-    <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.MyApplication.Splash" parent="Theme.MyApplication">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>
