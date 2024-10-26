@@ -50,10 +50,12 @@ android {
 }
 
 dependencies {
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)
     implementation(libs.google.play.services.location)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
