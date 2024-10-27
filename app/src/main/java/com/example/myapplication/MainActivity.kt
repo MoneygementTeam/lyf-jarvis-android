@@ -1,6 +1,6 @@
 package com.example.myapplication
 
-import ApiService
+import com.example.myapplication.api.ApiService
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent

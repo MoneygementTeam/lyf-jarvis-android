@@ -36,6 +36,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".WebViewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Transparent" />
 
         <service android:name=".WordDetectionService"
             android:foregroundServiceType="specialUse" />

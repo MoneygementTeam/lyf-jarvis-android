@@ -1,8 +1,5 @@
 package com.example.myapplication
 
-import ActivityRequest
-import ApiService
-import Location
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -10,8 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import com.example.myapplication.api.ApiService
 
 @Composable
 fun MainScreen(
@@ -19,6 +15,7 @@ fun MainScreen(
     apiService: ApiService,
     locationManager: LocationManager
 ) {
+    var isListening by remember { mutableStateOf(false) }
     var robotState by remember { mutableStateOf(RobotState.IDLE) }
     val scope = rememberCoroutineScope()
 
@@ -36,11 +33,10 @@ fun MainScreen(
         ) {
             ButtonSection(
                 context = context,
+                isListening = isListening,
+                onListeningChange = { isListening = it },
                 robotState = robotState,
-                onRobotStateChange = { robotState = it },
-                scope = scope,
-                apiService = apiService,
-                locationManager = locationManager
+                onRobotStateChange = { robotState = it }
             )
         }
     }
@@ -49,11 +45,10 @@ fun MainScreen(
 @Composable
 private fun ButtonSection(
     context: MainActivity,
+    isListening: Boolean,
+    onListeningChange: (Boolean) -> Unit,
     robotState: RobotState,
-    onRobotStateChange: (RobotState) -> Unit,
-    scope: CoroutineScope,
-    apiService: ApiService,
-    locationManager: LocationManager
+    onRobotStateChange: (RobotState) -> Unit
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -61,104 +56,38 @@ private fun ButtonSection(
     ) {
         CustomButton(
             onClick = {
-                onRobotStateChange(RobotState.LISTEN)
-                Intent(context.applicationContext, WordDetectionService::class.java).also {
-                    Toast.makeText(context, "음성인식 시작", Toast.LENGTH_SHORT).show()
+                onListeningChange(!isListening)
+                if (!isListening) {
+                    onRobotStateChange(RobotState.LISTEN)
                     val intent = Intent(context, WordDetectionService::class.java)
                     context.startService(intent)
-                }
-            },
-            modifier = Modifier.weight(1f).padding(end = 8.dp),
-            text = "LISTEN"
-        )
-        CustomButton(
-            onClick = {
-                onRobotStateChange(RobotState.IDLE)
-                Intent(context.applicationContext, WordDetectionService::class.java).also {
-                    Toast.makeText(context, "음성인식 종료", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "음성인식 시작", Toast.LENGTH_SHORT).show()
+                } else {
+                    onRobotStateChange(RobotState.IDLE)
                     val intent = Intent(context, WordDetectionService::class.java)
                     context.stopService(intent)
+                    Toast.makeText(context, "음성인식 종료", Toast.LENGTH_SHORT).show()
                 }
             },
-            modifier = Modifier.weight(1f).padding(start = 8.dp),
-            text = "STOP LISTEN"
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp),
+            text = if (isListening) "STOP LISTEN" else "LISTEN"
         )
-    }
 
-    Spacer(modifier = Modifier.height(16.dp))
-
-    Row(
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        modifier = Modifier.fillMaxWidth()
-    ) {
         CustomButton(
             onClick = {
-                onRobotStateChange(RobotState.GO)
-                Intent(context.applicationContext, WordDetectionService::class.java).also {
-                    Toast.makeText(context, "음성인식 종료", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(context, WordDetectionService::class.java)
-                    context.stopService(intent)
+                val intent = Intent(context, WebViewActivity::class.java).apply {
+                    putExtra("url", "www.naver.com")
                 }
-                scope.launch {
-                    sendActivityRequest(
-                        context,
-                        apiService,
-                        locationManager,
-                        "food"
-                    )
-                }
+                context.startActivity(intent)
             },
-            text = "EAT",
-            modifier = Modifier.weight(1f).padding(end = 8.dp)
-        )
-        CustomButton(
-            onClick = {
-                onRobotStateChange(RobotState.GO)
-                Intent(context.applicationContext, WordDetectionService::class.java).also {
-                    Toast.makeText(context, "음성인식 종료", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(context, WordDetectionService::class.java)
-                    context.stopService(intent)
-                }
-                scope.launch {
-                    sendActivityRequest(
-                        context,
-                        apiService,
-                        locationManager,
-                        "activity"
-                    )
-                }
-            },
-            text = "ACTIVITY",
-            modifier = Modifier.weight(1f).padding(start = 8.dp)
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp),
+            text = "HISTORY"
         )
     }
 
     Spacer(modifier = Modifier.height(32.dp))
-}
-
-private suspend fun sendActivityRequest(
-    context: MainActivity,
-    apiService: ApiService,
-    locationManager: LocationManager,
-    voiceText: String
-) {
-    try {
-        val request = ActivityRequest(
-            startPoint = Location(
-                name = "lyf funan",
-                latitude = locationManager.currentLatitude,
-                longitude = locationManager.currentLongitude
-            ),
-            voiceText = voiceText
-        )
-
-        val response = apiService.sendActivityRequest(request)
-        if (response.isSuccessful) {
-            Toast.makeText(context, "요청이 성공적으로 전송되었습니다", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(context, "요청 전송 실패", Toast.LENGTH_SHORT).show()
-        }
-    } catch (e: Exception) {
-        Toast.makeText(context, "오류 발생: ${e.message}", Toast.LENGTH_SHORT).show()
-    }
 }
