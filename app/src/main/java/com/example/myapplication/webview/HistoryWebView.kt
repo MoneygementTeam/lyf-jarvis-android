@@ -23,7 +23,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 class WebViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val url = intent.getStringExtra("url") ?: "history.com"
+        val url = intent.getStringExtra("url") ?: "localhost:3000/history?userId=user123"
 
         setContent {
             AnimatedWebView(

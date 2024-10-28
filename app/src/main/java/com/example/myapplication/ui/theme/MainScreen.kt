@@ -78,7 +78,7 @@ private fun ButtonSection(
         CustomButton(
             onClick = {
                 val intent = Intent(context, WebViewActivity::class.java).apply {
-                    putExtra("url", "www.naver.com")
+                    putExtra("url", "localhost:3000/history?userId=user123")
                 }
                 context.startActivity(intent)
             },

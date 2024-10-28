@@ -52,7 +52,6 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
         throw UnsupportedOperationException("Not yet implemented")
     }
 
-
     private fun muteSystemSounds() {
         audioManager?.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, 0)
         audioManager?.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0)
@@ -71,18 +70,15 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
                     speakText("Hello! How can I help you today?")
                 }
             }
-
             ConversationState.GREETING -> {
                 lastUserQuery = recognizedText
                 currentState = ConversationState.LISTENING
                 handleUserQuery(recognizedText)
             }
-
             ConversationState.LISTENING -> {
                 lastUserQuery = recognizedText
                 handleUserQuery(recognizedText)
             }
-
             ConversationState.RESPONDING -> {
                 // 응답 중에는 새로운 입력을 무시
             }
@@ -100,12 +96,10 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
                         "3. Explore the colorful Gamcheon Culture Village " +
                         "Would you like to know more about any of these?")
             }
-
             query.lowercase().contains("thank") -> {
                 speakText("You're welcome! Let me know if you need anything else.")
                 currentState = ConversationState.IDLE
             }
-
             else -> {
                 speakText("I didn't quite catch that. Could you please repeat your question?")
             }
@@ -113,6 +107,36 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
 
         currentState = ConversationState.LISTENING
     }
+
+    private fun configureTTS() {
+        tts.apply {
+            // 기본 설정
+            setSpeechRate(1.1f)  // 20% 더 빠르게
+            setPitch(1.1f)       // 기본 피치
+
+            // 음성 품질 설정
+            val params = Bundle().apply {
+                putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "messageID")
+                putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 0.8f)
+                }
+            }
+
+            // 음성 엔진 설정 (Android 5.0 이상)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                voices?.let { voices ->
+                    // 원하는 음성 찾기 (예: 여성 음성)
+                    val desiredVoice = voices.find {
+                        it.name.contains("en-us", ignoreCase = true) &&
+                                it.name.contains("female", ignoreCase = true)
+                    }
+                    desiredVoice?.let { setVoice(it) }
+                }
+            }
+        }
+    }
+
     private fun createNotification() {
         val builder = NotificationCompat.Builder(this, "default")
         builder.setSmallIcon(R.mipmap.ic_launcher)
@@ -155,7 +179,6 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
 
         createNotification()
 
-        // SpeechRecognizer 한 번만 초기화
         handler.post {
             mRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
                 setRecognitionListener(listener)
@@ -196,7 +219,7 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
 
             handler.post {
                 try {
-                    mRecognizer?.cancel()  // destroy 대신 cancel 사용
+                    mRecognizer?.cancel()
                     startListening()
                 } catch (e: Exception) {
                     Log.e(TAG, "재시도 실패: ${e.message}")
@@ -221,8 +244,6 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
             tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, "messageID")
         }
     }
-
-    // handleConversation, handleUserQuery 등 대화 관련 메소드들은 동일
 
     private val listener: RecognitionListener = object : RecognitionListener {
         override fun onReadyForSpeech(bundle: Bundle) {
@@ -300,6 +321,9 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 Log.e("TTS", "This language is not supported")
             }
+
+            // TTS 설정 적용
+            configureTTS()
 
             tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(utteranceId: String) {
