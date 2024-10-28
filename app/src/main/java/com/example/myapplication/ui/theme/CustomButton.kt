@@ -19,7 +19,8 @@ import androidx.compose.ui.unit.sp
 fun CustomButton(
     onClick: () -> Unit,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean
 ) {
     val gradientColors = listOf(
         Color(0xFF4169E1),  // 시작 색상 (로얄 블루)

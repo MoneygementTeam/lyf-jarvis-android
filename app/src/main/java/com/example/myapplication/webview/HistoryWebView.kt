@@ -19,15 +19,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import android.util.Base64
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 
 class WebViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val url = intent.getStringExtra("url") ?: "localhost:3000/history?userId=user123"
+        val url = intent.getStringExtra("url") ?: "moneygement.o-r.kr/history"
+        println(url)
+        val userId = intent.getStringExtra("userId") ?: "bobsbeautifulife"
 
         setContent {
-            AnimatedWebView(
+            PostWebView(
                 url = url,
+                userId = userId,
                 onClose = { finish() }
             )
         }
@@ -36,7 +42,7 @@ class WebViewActivity : ComponentActivity() {
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun AnimatedWebView(url: String, onClose: () -> Unit) {
+fun PostWebView(url: String, userId: String, onClose: () -> Unit) {
     var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -59,14 +65,47 @@ fun AnimatedWebView(url: String, onClose: () -> Unit) {
             color = Color.White
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // WebView
+                // WebView with POST request
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context ->
                         WebView(context).apply {
-                            webViewClient = WebViewClient()
-                            settings.javaScriptEnabled = true
-                            loadUrl("https://$url")
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                cacheMode = WebSettings.LOAD_NO_CACHE
+                                loadsImagesAutomatically = true
+                            }
+
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: WebResourceRequest?
+                                ): Boolean {
+                                    return false
+                                }
+                            }
+
+                            // POST 데이터 생성
+                            val postData = "userId=$userId"
+
+                            // HTML 폼 생성
+                            val html = """
+                                <html>
+                                    <body onload="document.forms[0].submit()">
+                                        <form action="https://$url" method="post">
+                                            <input type="hidden" name="userId" value="$userId">
+                                        </form>
+                                    </body>
+                                </html>
+                            """.trimIndent()
+
+                            // Base64로 인코딩된 HTML 로드
+                            loadData(
+                                Base64.encodeToString(html.toByteArray(), Base64.NO_PADDING),
+                                "text/html",
+                                "base64"
+                            )
                         }
                     }
                 )

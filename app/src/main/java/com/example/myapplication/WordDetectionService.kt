@@ -39,11 +39,15 @@ class WordDetectionService : Service() {
     private lateinit var conversationHandler: ConversationHandler
     private lateinit var ttsHandler: TextToSpeechHandler
 
+    private var isServiceActive = false  // 서비스 활성화 상태 추적
+    private var currentRobotState = RobotState.IDLE
+
     override fun onCreate() {
         super.onCreate()
         setupAudio()
         setupSpeechRecognition()
         createNotification()
+        isServiceActive = true
 
         ttsHandler = TextToSpeechHandler(
             context = this,
@@ -51,16 +55,32 @@ class WordDetectionService : Service() {
                 isSpeaking = speaking
                 if (speaking) {
                     stopListening()
+                    updateRobotState(RobotState.GO)
                 } else {
                     startListening()
+                    if (isServiceActive) {
+                        updateRobotState(RobotState.LISTEN)
+                    }
                 }
             }
         )
 
         conversationHandler = ConversationHandler(
             speakText = { text -> ttsHandler.speak(text) },
-            serviceScope = serviceScope
+            serviceScope = serviceScope,
+            onStateChange = { newState ->
+                updateRobotState(newState)
+            }
         )
+
+        // 서비스 시작 시 LISTEN 상태로 설정
+        updateRobotState(RobotState.LISTEN)
+    }
+
+    private fun updateRobotState(newState: RobotState) {
+        currentRobotState = newState
+        SharedState.updateRobotState(newState)
+        Log.d("RobotState", "State changed to: $newState")
     }
 
     private fun setupAudio() {
@@ -236,14 +256,26 @@ class WordDetectionService : Service() {
         startForeground(NOTI_ID, notification)
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        isServiceActive = true
+        if (!isListening && !isSpeaking) {
+            updateRobotState(RobotState.LISTEN)
+        }
+        return START_STICKY
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        isServiceActive = false
         isListening = false
         mRecognizer?.destroy()
         mRecognizer = null
         ttsHandler.shutdown()
         restoreSystemSounds()
         serviceScope.cancel()
+
+        // 서비스 종료 시 IDLE 상태로만 변경
+        updateRobotState(RobotState.IDLE)
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -251,7 +283,7 @@ class WordDetectionService : Service() {
     }
 
     companion object {
-        private const val TAG = "VoiceRecognition"
+        private const val TAG = "WordDetectionService"
         private const val NOTI_ID = 1
     }
 }

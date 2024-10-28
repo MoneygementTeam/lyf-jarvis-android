@@ -20,7 +20,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.zIndex
 
 enum class RobotState {
-    IDLE, GO, LISTEN
+    IDLE, GO, LISTEN, WAIT
 }
 
 
@@ -42,6 +42,7 @@ fun BackgroundAnimation(robotState: RobotState) {
         RobotState.IDLE -> R.drawable.robot_idle
         RobotState.GO -> R.drawable.robot_go
         RobotState.LISTEN -> R.drawable.robot_listen
+        RobotState.WAIT -> R.drawable.robot_wait
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
