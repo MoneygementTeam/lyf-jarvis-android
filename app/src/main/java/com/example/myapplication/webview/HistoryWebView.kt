@@ -26,8 +26,7 @@ import android.webkit.WebSettings
 class WebViewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val url = intent.getStringExtra("url") ?: "moneygement.o-r.kr/history"
-        println(url)
+        val url = "https://moneygement.o-r.kr/history" ?: ""
         val userId = intent.getStringExtra("userId") ?: "bobsbeautifulife"
 
         setContent {
@@ -86,26 +85,7 @@ fun PostWebView(url: String, userId: String, onClose: () -> Unit) {
                                 }
                             }
 
-                            // POST 데이터 생성
-                            val postData = "userId=$userId"
-
-                            // HTML 폼 생성
-                            val html = """
-                                <html>
-                                    <body onload="document.forms[0].submit()">
-                                        <form action="https://$url" method="post">
-                                            <input type="hidden" name="userId" value="$userId">
-                                        </form>
-                                    </body>
-                                </html>
-                            """.trimIndent()
-
-                            // Base64로 인코딩된 HTML 로드
-                            loadData(
-                                Base64.encodeToString(html.toByteArray(), Base64.NO_PADDING),
-                                "text/html",
-                                "base64"
-                            )
+                            loadUrl("${url}?userId=${userId}")
                         }
                     }
                 )
