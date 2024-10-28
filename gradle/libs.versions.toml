@@ -1,5 +1,6 @@
 [versions]
 agp = "8.6.0"
+androidxLifecycleRuntimeKtx = "2.6.2"
 coilCompose = "2.5.0"
 converterGson = "2.9.0"
 glide = "4.16.0"
@@ -16,6 +17,7 @@ volley = "1.2.1"  # 버전 정의
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx-v262 = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidxLifecycleRuntimeKtx" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 coil-gif = { module = "io.coil-kt:coil-gif", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }

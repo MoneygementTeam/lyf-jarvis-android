@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import OpenAiService
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -20,8 +21,13 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.myapplication.openai.application.OpenAiService
 import java.util.Locale
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 enum class ConversationState {
     IDLE,
@@ -34,7 +40,7 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
     private var intent: Intent? = null
     private var mRecognizer: SpeechRecognizer? = null
     private lateinit var tts: TextToSpeech
-    private val specificWord = "life Jarvis"
+    private val specificWord = "Jarvis"
     private var audioManager: AudioManager? = null
     private var originalNotificationVolume: Int = 0
     private var isAnswer: Boolean = false
@@ -44,9 +50,11 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
 
     private var currentState = ConversationState.IDLE
     private var lastUserQuery: String = ""
+    private var pendingResponse: String = ""  // 응답을 저장할 새로운 변수
     private var isSpeaking = false
     private val handler = Handler(Looper.getMainLooper())
     private var isListening = false
+    private val serviceScope = CoroutineScope(Dispatchers.Main + Job())
 
     override fun onBind(intent: Intent): IBinder? {
         throw UnsupportedOperationException("Not yet implemented")
@@ -67,7 +75,7 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
             ConversationState.IDLE -> {
                 if (recognizedText.lowercase().contains(specificWord.lowercase())) {
                     currentState = ConversationState.GREETING
-                    speakText("Hello! How can I help you today?")
+                    speakText("Hello! How is it going?")
                 }
             }
             ConversationState.GREETING -> {
@@ -88,23 +96,17 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
     private fun handleUserQuery(query: String) {
         currentState = ConversationState.RESPONDING
 
-        when {
-            query.lowercase().contains("anything fun") -> {
-                speakText("Yes! Here are some fun activities I recommend: " +
-                        "1. Visit the Busan Cinema Center for a movie " +
-                        "2. Take a scenic cable car ride at Songdo Beach " +
-                        "3. Explore the colorful Gamcheon Culture Village " +
-                        "Would you like to know more about any of these?")
-            }
-            query.lowercase().contains("thank") -> {
-                speakText("You're welcome! Let me know if you need anything else.")
-                currentState = ConversationState.IDLE
-            }
-            else -> {
-                speakText("I didn't quite catch that. Could you please repeat your question?")
+        serviceScope.launch {
+            try {
+                val result = openAiService.call(query)
+                pendingResponse = result  // 응답을 임시 변수에 저장
+                speakText(pendingResponse)  // 저장된 응답을 읽어줌
+            } catch (e: Exception) {
+                println("에러: ${e.message}")
+                pendingResponse = "Sorry, I couldn't process your request"
+                speakText(pendingResponse)
             }
         }
-
         currentState = ConversationState.LISTENING
     }
 
@@ -235,6 +237,8 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
     }
 
     private fun speakText(text: String) {
+        if (text.isBlank()) return  // 빈 텍스트는 읽지 않음
+
         handler.post {
             isSpeaking = true
             stopListening()
@@ -361,6 +365,7 @@ class WordDetectionService: Service(), TextToSpeech.OnInitListener {
             mRecognizer = null
         }
         restoreSystemSounds()
+        serviceScope.cancel()
     }
 
     companion object {
